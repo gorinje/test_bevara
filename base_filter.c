@@ -132,6 +132,7 @@ const GF_FilterRegister FilterRegister = {
 	SETCAPS(BaseFilterCaps),
 	.process = base_filter_process,
 	.configure_pid = base_filter_config_input
+	
 };
 
 const GF_FilterRegister * EMSCRIPTEN_KEEPALIVE dynCall_filter_register(GF_FilterSession *session)
