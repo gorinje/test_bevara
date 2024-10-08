@@ -14,7 +14,11 @@ static void base_filter_finalize(GF_Filter *filter)
 {
 	//peform any finalyze routine needed, including potential free in the filter context
 	//if not needed, set the filter_finalize to NULL
-	
+
+
+	// inserting test lines
+
+
 }
 static GF_Err base_filter_process(GF_Filter *filter)
 {
