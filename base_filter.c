@@ -688,8 +688,6 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 	if (!pck_dst) return GF_OUT_OF_MEM;
 	//memcpy(data_dst, data_src, size);
 
-
-
 	//no need to adjust data framing
 	//	gf_filter_pck_set_framing(pck_dst, GF_TRUE, GF_TRUE);
 
