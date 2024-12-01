@@ -581,6 +581,7 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 	if (!pck) return GF_OK;
 	data_src = gf_filter_pck_get_data(pck, &size);
 
+	
 	char * bmp_data = data_src;
 	int i;
 	dataInd = 0; // init our index into the data 
@@ -672,16 +673,18 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 			memcpy(bmp->Data,tmpData,bmp->Header.Height*bmp->Header.Width*4);
 			free(tmpData);
 		}
+	data_dst = bmp->Data; 
 
 
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_WIDTH, &PROP_UINT(BMP_GetWidth(bmp)));
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_HEIGHT, &PROP_UINT(BMP_GetHeight(bmp)));
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_STRIDE, &PROP_UINT(4 * BMP_GetWidth(bmp)));	
 
-	data_dst = bmp->Data; 
+	
 
 	//produce output packet using memory allocation
 	pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, BMP_GetWidth(bmp)*BMP_GetHeight(bmp)*4, &data_dst);
+	//pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, size, &data_dst);
 	if (!pck_dst) return GF_OUT_OF_MEM;
 	//memcpy(data_dst, data_src, size);
 
