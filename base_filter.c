@@ -565,7 +565,7 @@ static void base_filter_finalize(GF_Filter *filter)
 
 
 	// inserting test lines
-	return GF_OK;
+	// no return needed return GF_OK;
 
 }
 static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
