@@ -1,11 +1,12 @@
 {
-    "name": "filter",
-    "description": "Short description of the filter",
+    "name": "BMP1PP",
+    "description": "BMP 1BPP",
     "filters": [
         "base_filter"
     ],
     "help": "Long description of the filter.",
     "support": [
+        "image",
         "audio",
         "video"
     ],
@@ -14,8 +15,7 @@
     },
     "Format": ["Audio", "Video"],
     "extension":{
-      "ext1" : "audio",
-      "ext2" : "video"
+      "bmp" : "image"
     },
     "licence_required":false
 }
