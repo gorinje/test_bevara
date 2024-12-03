@@ -717,6 +717,8 @@ static GF_Err BMP1BPP_filter_config_input(GF_Filter *filter, GF_FilterPid *pid, 
 		stack->src_pid = NULL;
 		return GF_OK;
 		}
+
+		
 		//update of caps, check everything is fine
 		else {
 			if (!gf_filter_pid_check_caps(pid))
