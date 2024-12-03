@@ -718,7 +718,7 @@ static GF_Err BMP1BPP_filter_config_input(GF_Filter *filter, GF_FilterPid *pid, 
 		return GF_OK;
 		}
 
-		
+
 		//update of caps, check everything is fine
 		else {
 			if (!gf_filter_pid_check_caps(pid))
@@ -768,7 +768,7 @@ GF_Err base_filter_initialize(GF_Filter *filter)
 	}
 	//if you filter is a source, this is the right place to start declaring output PIDs, such as above
 
-	return GF_OK;
+	// no return value needed
 }
 
 #define OFFS(_n)	#_n, offsetof(GF_BaseFilter, _n)
