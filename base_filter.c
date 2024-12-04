@@ -789,6 +789,9 @@ static const GF_FilterCapability BMP1BPPFullCaps[] =
 	CAP_UINT(GF_CAPS_OUTPUT, GF_PROP_PID_CODECID, GF_CODECID_RAW),
 };
 
+
+
+
 const GF_FilterRegister BMP1BPPRegister = {
 	.name = "BMP1BPP",
 	GF_FS_SET_DESCRIPTION("BMP 1BPP")
