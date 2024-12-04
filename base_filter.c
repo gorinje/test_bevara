@@ -804,6 +804,8 @@ const GF_FilterRegister BMP1BPPRegister = {
 	
 };
 
+
+
 const GF_FilterRegister * EMSCRIPTEN_KEEPALIVE dynCall_BMP1BPP_register(GF_FilterSession *session)
 {
 	return &BMP1BPPRegister;
