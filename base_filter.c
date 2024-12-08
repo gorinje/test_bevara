@@ -734,7 +734,7 @@ static GF_Err BMP1BPP_filter_config_input(GF_Filter *filter, GF_FilterPid *pid, 
 
 
 	//setup output (if we are a filter not a sink)
-
+	stack->src_pid = pid;
 	stack->dst_pid = gf_filter_pid_new(filter);
 	gf_filter_pid_copy_properties(stack->dst_pid, stack->src_pid);
 
@@ -768,7 +768,7 @@ GF_Err base_filter_initialize(GF_Filter *filter)
 	}
 	//if you filter is a source, this is the right place to start declaring output PIDs, such as above
 
-	// no return value needed
+	return GF_OK;
 }
 
 #define OFFS(_n)	#_n, offsetof(GF_BaseFilter, _n)
