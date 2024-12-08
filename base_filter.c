@@ -25,22 +25,6 @@
 	#define UCHAR	unsigned char
 #endif
 
-
-typedef enum
-{
-	BMP_OK = 0,				/* No error */
-	BMP_ERROR,				/* General error */
-	BMP_OUT_OF_MEMORY,		/* Could not allocate enough memory to complete the operation */
-	BMP_IO_ERROR,			/* General input/output error */
-	BMP_FILE_NOT_FOUND,		/* File not found */
-	BMP_FILE_NOT_SUPPORTED,	/* File is not a supported BMP variant */
-	BMP_FILE_INVALID,		/* File is not a BMP image or is an invalid BMP */
-	BMP_INVALID_ARGUMENT,	/* An argument is invalid or out of range */
-	BMP_TYPE_MISMATCH,		/* The requested action is not compatible with the BMP's type */
-	BMP_ERROR_NUM
-} BMP_STATUS;
-
-
 typedef  enum
  {
    BI_RGB = 0x0000,
@@ -108,12 +92,6 @@ int			BMP_GetWidth( );
 int			BMP_GetHeight( );
 
 
-
-/* Holds the last error code */
-static BMP_STATUS BMP_LAST_ERROR_CODE;
-
-
-
 /*********************************** Forward declarations **********************************/
 int		ReadHeader	( const char* bmp_data, const int size );
 int		ReadUINT	(  UINT* x, const char* bmp_data,  const int size );
@@ -134,12 +112,7 @@ int scanLinePadding;
 int BMP_GetWidth(  )
 {
 	if ( bmp == NULL )
-	{
-		BMP_LAST_ERROR_CODE = BMP_INVALID_ARGUMENT;
-		return -1;
-	}
-
-	BMP_LAST_ERROR_CODE = BMP_OK;
+		return 0;
 
 	return ( bmp->Header.Width );
 }
@@ -151,12 +124,7 @@ int BMP_GetWidth(  )
 int BMP_GetHeight( )
 {
 	if ( bmp == NULL )
-	{
-		BMP_LAST_ERROR_CODE = BMP_INVALID_ARGUMENT;
-		return -1;
-	}
-
-	BMP_LAST_ERROR_CODE = BMP_OK;
+		return 0;
 
 	return ( bmp->Header.Height );
 }
@@ -172,23 +140,22 @@ int	ReadHeader(const char* bmp_data, const int size )
 {
 	if ( bmp == NULL  )
 	{
-		return BMP_INVALID_ARGUMENT;
+		return GF_NOT_SUPPORTED;
 	}
 
 	/* The header's fields are read one by one, and converted from the format's
 	little endian to the system's native representation. */
 
 	/* the first part is the general file header */
-	if ( !ReadUSHORT( &( bmp->Header.Magic ),bmp_data,size ) )			return BMP_IO_ERROR;
+	if ( !ReadUSHORT( &( bmp->Header.Magic ),bmp_data,size ) )			return GF_NOT_SUPPORTED;
 
 	/*early sanity check*/
 	
 	/* check the magic number options: BM, BA, CI, CP, IC, PT (little endian)*/
 	if (  bmp->Header.Magic != 0x4D42 && bmp->Header.Magic != 0x4D41 && bmp->Header.Magic != 0x4943 && bmp->Header.Magic != 0x5043 && bmp->Header.Magic != 0x5450)
 	{
-		BMP_LAST_ERROR_CODE = BMP_FILE_INVALID;
 		free( bmp );
-		return BMP_LAST_ERROR_CODE;
+		return GF_NOT_SUPPORTED;
 	}
 
 	/* let's init this thing in case something squeaks by us - just do field-by-field*/
@@ -222,24 +189,18 @@ int	ReadHeader(const char* bmp_data, const int size )
 	bmp->Header.BlueMask.lowBit = 0;
 
 	/* continue with general header */
-	if ( !ReadUINT( &( bmp->Header.FileSize ),bmp_data,size ) )			return BMP_IO_ERROR;
-	if ( !ReadUSHORT( &( bmp->Header.Reserved1 ), bmp_data ,size) )		return BMP_IO_ERROR;
-	if ( !ReadUSHORT( &( bmp->Header.Reserved2 ), bmp_data,size ) )		return BMP_IO_ERROR;
-	if ( !ReadUINT( &( bmp->Header.DataOffset ), bmp_data,size ) )		return BMP_IO_ERROR;
+	if ( !ReadUINT( &( bmp->Header.FileSize ),bmp_data,size ) )			return GF_NOT_SUPPORTED;
+	if ( !ReadUSHORT( &( bmp->Header.Reserved1 ), bmp_data ,size) )		return GF_NOT_SUPPORTED;
+	if ( !ReadUSHORT( &( bmp->Header.Reserved2 ), bmp_data,size ) )		return GF_NOT_SUPPORTED;
+	if ( !ReadUINT( &( bmp->Header.DataOffset ), bmp_data,size ) )		return GF_NOT_SUPPORTED;
 
 	/* the second part is the bitmap header --- there are multiple versions of this */
-	if ( !ReadUINT( &( bmp->Header.HeaderSize ), bmp_data ,size) )		return BMP_IO_ERROR;
+	if ( !ReadUINT( &( bmp->Header.HeaderSize ), bmp_data ,size) )		return GF_NOT_SUPPORTED;
 
 	/* sanity check first */
-	if (  bmp->Header.HeaderSize != 12 &&  bmp->Header.HeaderSize != 40 
-	 	// TODO: only BMP versions 2 and 3 are supported at this point - the remainder of the formats are TBA
-		// && bmp->Header.HeaderSize != 16 
-		// && bmp->Header.HeaderSize != 52 // NOT CURRENTLY SUPPORTING THE ADOBE V2 HEADER
-		// && bmp->Header.HeaderSize != 56 && bmp->Header.HeaderSize != 64  
-		// && bmp->Header.HeaderSize != 108 && bmp->Header.HeaderSize != 124 )
-	)
+	if (  bmp->Header.HeaderSize != 12 &&  bmp->Header.HeaderSize != 40 	)
 	{
-		return BMP_FILE_INVALID;
+		return GF_NOT_SUPPORTED;
 	}
 
 	
@@ -247,55 +208,55 @@ int	ReadHeader(const char* bmp_data, const int size )
 	{
 		/* The 12-byte header will have just USHORT or SHORT fields */
 		USHORT tmp;
-		if ( !ReadUSHORT( &tmp, bmp_data,size ) )		return BMP_IO_ERROR;
+		if ( !ReadUSHORT( &tmp, bmp_data,size ) )		return GF_NOT_SUPPORTED;
 		bmp->Header.Width = (UINT) (tmp & 0x7FFF);
-		if ( !ReadUSHORT( &tmp, bmp_data ,size) )		return BMP_IO_ERROR;
+		if ( !ReadUSHORT( &tmp, bmp_data ,size) )		return GF_NOT_SUPPORTED;
 		if ((tmp & 0x8000)) bmp->Header.Orientation = 1; // MSB should indicate bitmap order
 		bmp->Header.Height = (UINT) (tmp & 0x7FFF) ;
-		if ( !ReadUSHORT( &( bmp->Header.Planes ), bmp_data,size ) )		return BMP_IO_ERROR;
-		if ( !ReadUSHORT( &( bmp->Header.BitsPerPixel ), bmp_data ,size) )	return BMP_IO_ERROR;
+		if ( !ReadUSHORT( &( bmp->Header.Planes ), bmp_data,size ) )		return GF_NOT_SUPPORTED;
+		if ( !ReadUSHORT( &( bmp->Header.BitsPerPixel ), bmp_data ,size) )	return GF_NOT_SUPPORTED;
 		if ((bmp->Header.Planes !=1 ) || (bmp->Header.BitsPerPixel == 16) || (bmp->Header.BitsPerPixel == 32))
 		{
-			return BMP_FILE_INVALID;
+			return GF_NOT_SUPPORTED;
 		}
 		// sanity check the palette
 		bmp->Header.PaletteElementSize = 3; /* this format uses a 3-byte palette*/
 		bmp->Header.PaletteSize = (bmp->Header.DataOffset - 26); 
-		if ( (bmp->Header.PaletteSize)/(pow(2,(bmp->Header.BitsPerPixel)))  != bmp->Header.PaletteElementSize) return BMP_FILE_INVALID;
+		if ( (bmp->Header.PaletteSize)/(pow(2,(bmp->Header.BitsPerPixel)))  != bmp->Header.PaletteElementSize) return GF_NOT_SUPPORTED;
 		// Calculate since not explicitly included
 		bmp->Header.ImageDataSize = bmp->Header.FileSize - bmp->Header.DataOffset;
-		return BMP_OK;
+		return GF_OK;
 	}
 
 	/* Non-12-byte header cases*/
 	/* Common fields*/
-	if ( !ReadUINT( &( bmp->Header.Width ), bmp_data,size ) )			return BMP_IO_ERROR;
-	if ( !ReadUINT( &( bmp->Header.Height ), bmp_data ,size) )			return BMP_IO_ERROR;
-	if ( !ReadUSHORT( &( bmp->Header.Planes ), bmp_data,size ) )		return BMP_IO_ERROR;
-	if ( !ReadUSHORT( &( bmp->Header.BitsPerPixel ), bmp_data ,size) )	return BMP_IO_ERROR;
+	if ( !ReadUINT( &( bmp->Header.Width ), bmp_data,size ) )			return GF_NOT_SUPPORTED;
+	if ( !ReadUINT( &( bmp->Header.Height ), bmp_data ,size) )			return GF_NOT_SUPPORTED;
+	if ( !ReadUSHORT( &( bmp->Header.Planes ), bmp_data,size ) )		return GF_NOT_SUPPORTED;
+	if ( !ReadUSHORT( &( bmp->Header.BitsPerPixel ), bmp_data ,size) )	return GF_NOT_SUPPORTED;
 	// Extract the orientation
 	if ((int)bmp->Header.Height < 0 ) bmp->Header.Orientation = 1; // MSB should indicate bitmap order
 		 bmp->Header.Height = (abs((int)bmp->Header.Height)) ;
 
 	/* read the other fields of the BITMAPINFOHEADER*/
-	if ( !ReadUINT( &( bmp->Header.CompressionType ), bmp_data ,size) )	return BMP_IO_ERROR;
-	if ( !ReadUINT( &( bmp->Header.ImageDataSize ), bmp_data ,size) )	return BMP_IO_ERROR;
-	if ( !ReadUINT( &( bmp->Header.HPixelsPerMeter ), bmp_data ,size) )	return BMP_IO_ERROR;
-	if ( !ReadUINT( &( bmp->Header.VPixelsPerMeter ), bmp_data,size ) )	return BMP_IO_ERROR;
-	if ( !ReadUINT( &( bmp->Header.ColorsUsed ), bmp_data,size ) )		return BMP_IO_ERROR;
-	if ( !ReadUINT( &( bmp->Header.ColorsRequired ), bmp_data ,size) )	return BMP_IO_ERROR;
+	if ( !ReadUINT( &( bmp->Header.CompressionType ), bmp_data ,size) )	return GF_NOT_SUPPORTED;
+	if ( !ReadUINT( &( bmp->Header.ImageDataSize ), bmp_data ,size) )	return GF_NOT_SUPPORTED;
+	if ( !ReadUINT( &( bmp->Header.HPixelsPerMeter ), bmp_data ,size) )	return GF_NOT_SUPPORTED;
+	if ( !ReadUINT( &( bmp->Header.VPixelsPerMeter ), bmp_data,size ) )	return GF_NOT_SUPPORTED;
+	if ( !ReadUINT( &( bmp->Header.ColorsUsed ), bmp_data,size ) )		return GF_NOT_SUPPORTED;
+	if ( !ReadUINT( &( bmp->Header.ColorsRequired ), bmp_data ,size) )	return GF_NOT_SUPPORTED;
 
 	if (  bmp->Header.HeaderSize == 40) // Win Version 3s -  sanity check  and calculate the palette
 	{
 			// check the BBP and compression type for Win 3.x 
 			if ((bmp->Header.CompressionType < 0  ) || (bmp->Header.CompressionType > 3  ))
 			{
-				return BMP_FILE_INVALID;
+				return GF_NOT_SUPPORTED;
 			}
 			if ((bmp->Header.BitsPerPixel != 1  ) && (bmp->Header.BitsPerPixel !=  4  ) &&  (bmp->Header.BitsPerPixel !=  8  ) && (bmp->Header.BitsPerPixel !=  24  )
 			 &&  (bmp->Header.BitsPerPixel !=  16  ) && (bmp->Header.BitsPerPixel !=  32  ))
 			{
-				return BMP_FILE_INVALID;
+				return GF_NOT_SUPPORTED;
 			}
 
 			// check whether a bit mask is used or calculate the palette
@@ -319,7 +280,7 @@ int	ReadHeader(const char* bmp_data, const int size )
 				// Sanity check if needed - ImageDataSize can be 0 for uncompressed images
 				if ((bmp->Header.CompressionType != 0) && (bmp->Header.ImageDataSize != bmp->Header.FileSize - bmp->Header.DataOffset))
 					{
-						return BMP_FILE_INVALID;
+						return GF_NOT_SUPPORTED;
 					}
 				// Otherwise allocate and read palette (color table), if present 
 				if (( bmp->Header.BitsPerPixel <= 8 ) && (bmp->Header.PaletteSize > 0) && (bmp->Header.BitMask == 0))
@@ -328,17 +289,15 @@ int	ReadHeader(const char* bmp_data, const int size )
 					bmp->Palette = (UCHAR*) malloc( bmp->Header.PaletteSize * sizeof( UCHAR ) );
 					if ( bmp->Palette == NULL )
 					{
-						BMP_LAST_ERROR_CODE = BMP_OUT_OF_MEMORY;
 						free( bmp );
-						return BMP_LAST_ERROR_CODE;
+						return GF_NOT_SUPPORTED;
 					}
 
 					if ( dataInd+ bmp->Header.PaletteSize > size )
 					{
-						BMP_LAST_ERROR_CODE = BMP_FILE_INVALID;
 						free( bmp->Palette );
 						free( bmp );
-						return BMP_LAST_ERROR_CODE;
+						return GF_NOT_SUPPORTED;
 					}
 					else
 					{
@@ -353,7 +312,7 @@ int	ReadHeader(const char* bmp_data, const int size )
 			}	
 	} // end of Win v3.x header read and check  
 
-	return BMP_OK;
+	return GF_OK;
 }
 
 
@@ -518,7 +477,7 @@ int 	dec1(const char* bmp_data)
 		
 
 
-	return BMP_OK;
+	return GF_OK;
 }
 
 
@@ -587,23 +546,19 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 	dataInd = 0; // init our index into the data 
 	scanLinePadding = 0; 
 
-  	BMP_LAST_ERROR_CODE=BMP_OK;
-
 	/* Allocate */
   	bmp = (struct BMP_struct*) malloc( sizeof( struct BMP_struct ) );
 	if ( bmp == NULL )
 	{
-		BMP_LAST_ERROR_CODE = BMP_OUT_OF_MEMORY;
-		return BMP_LAST_ERROR_CODE;
+		return GF_OUT_OF_MEM;
 	}
 
 
 	/* Read header */
-	if ( ReadHeader( bmp_data, size) != BMP_OK  )
+	if ( ReadHeader( bmp_data, size) != GF_OK  )
 	{
-		BMP_LAST_ERROR_CODE = BMP_FILE_INVALID;
 		free( bmp );
-		return BMP_LAST_ERROR_CODE;
+		return GF_NOT_SUPPORTED;
 	}
 
 	/* Check that the bitmap variant is supported */
@@ -611,46 +566,32 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 	if (  bmp->Header.BitsPerPixel != 32 && bmp->Header.BitsPerPixel != 24 && bmp->Header.BitsPerPixel != 16 && bmp->Header.BitsPerPixel != 8 
 		&& bmp->Header.BitsPerPixel != 4 && bmp->Header.BitsPerPixel != 2 && bmp->Header.BitsPerPixel != 1  )
 	{
-		BMP_LAST_ERROR_CODE = BMP_FILE_NOT_SUPPORTED;
 		free( bmp );
-		return BMP_LAST_ERROR_CODE;
+		return GF_NOT_SUPPORTED;
 	}
 	/* next check CompressionType and permitted header sizes */
 	if (  bmp->Header.CompressionType != 0 && bmp->Header.HeaderSize != 40 )
 	{
-		BMP_LAST_ERROR_CODE = BMP_FILE_NOT_SUPPORTED;
 		free( bmp );
-		return BMP_LAST_ERROR_CODE;
+		return GF_NOT_SUPPORTED;
 	}
 
 	/* Allocate memory for image data */
 	bmp->Data = (UCHAR*) malloc( bmp->Header.Width* bmp->Header.Height * 4); /* forcing RGBA output*/
 	if ( bmp->Data == NULL )
 	{
-		BMP_LAST_ERROR_CODE = BMP_OUT_OF_MEMORY;
 		free( bmp->Palette );
 		free( bmp );
-		return BMP_LAST_ERROR_CODE;
+		return GF_OUT_OF_MEM;
 	}
-
-
-	/* Sanity check before decoding*/
-	// if (dataInd + bmp->Header.ImageDataSize > size )
-	// 	{
-	// 		BMP_LAST_ERROR_CODE = BMP_FILE_INVALID;
-	// 		free( bmp->Data );
-	// 		free( bmp->Palette );
-	// 		free( bmp );
-	// 		return BMP_LAST_ERROR_CODE;
-	// 	}
 	
 	/* do the decode */
 	if (bmp->Header.BitsPerPixel == 1)
 	{
-			if (dec1(bmp_data) != BMP_OK) return BMP_FILE_NOT_SUPPORTED;
+			if (dec1(bmp_data) != GF_OK) return GF_NOT_SUPPORTED;
 	}
 	else // shouldn't reach here if did earlier sanity check 
-			return BMP_FILE_NOT_SUPPORTED;
+			return GF_NOT_SUPPORTED;
 	
 	// Flip, if needed. Leave here rather than doing in-place calculation. Uses memory, but simpler. 
 	if (bmp->Header.Orientation == 0) // origin in lower-left
@@ -659,8 +600,7 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 			tmpData = (UCHAR*) malloc( bmp->Header.Width* bmp->Header.Height * 4); /* forcing RGBA output*/
 			if ( tmpData == NULL )
 				{
-					BMP_LAST_ERROR_CODE = BMP_OUT_OF_MEMORY;
-					return BMP_OUT_OF_MEMORY;	
+					return GF_OUT_OF_MEM;	
 				}
 			int ascend = 0;
 			int descend = 0;
