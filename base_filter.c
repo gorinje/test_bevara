@@ -635,14 +635,14 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 
 
 	/* Sanity check before decoding*/
-	if (dataInd + bmp->Header.ImageDataSize > size )
-		{
-			BMP_LAST_ERROR_CODE = BMP_FILE_INVALID;
-			free( bmp->Data );
-			free( bmp->Palette );
-			free( bmp );
-			return BMP_LAST_ERROR_CODE;
-		}
+	// if (dataInd + bmp->Header.ImageDataSize > size )
+	// 	{
+	// 		BMP_LAST_ERROR_CODE = BMP_FILE_INVALID;
+	// 		free( bmp->Data );
+	// 		free( bmp->Palette );
+	// 		free( bmp );
+	// 		return BMP_LAST_ERROR_CODE;
+	// 	}
 	
 	/* do the decode */
 	if (bmp->Header.BitsPerPixel == 1)
