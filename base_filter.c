@@ -98,7 +98,7 @@ int		ReadUSHORT	(  USHORT *x, const char* bmp_data, const int size );
 int		BitfieldRange(UINT mask, UINT *range, UINT *lowBit);
 int 	dec1(const char* bmp_data);
 
-/* BMP representation and global helper variables*/
+/* BMP representation and helper variables*/
 struct BMP_struct * bmp;
 long dataInd;
 int scanLinePadding;
@@ -196,11 +196,12 @@ int	ReadHeader(const char* bmp_data, const int size )
 	if ( !ReadUINT( &( bmp->Header.HeaderSize ), bmp_data ,size) )		return GF_NOT_SUPPORTED;
 
 	/* sanity check first */
-	if (  bmp->Header.HeaderSize != 40 	)
+	if ( bmp->Header.HeaderSize != 40 	)
 	{
 		return GF_NOT_SUPPORTED;
 	}
 
+	
 
 	/* Non-12-byte header cases*/
 	/* Common fields*/
@@ -227,7 +228,8 @@ int	ReadHeader(const char* bmp_data, const int size )
 			{
 				return GF_NOT_SUPPORTED;
 			}
-			if (bmp->Header.BitsPerPixel != 1  )
+			if ((bmp->Header.BitsPerPixel != 1  ) && (bmp->Header.BitsPerPixel !=  4  ) &&  (bmp->Header.BitsPerPixel !=  8  ) && (bmp->Header.BitsPerPixel !=  24  )
+			 &&  (bmp->Header.BitsPerPixel !=  16  ) && (bmp->Header.BitsPerPixel !=  32  ))
 			{
 				return GF_NOT_SUPPORTED;
 			}
@@ -359,44 +361,44 @@ int 	dec1(const char* bmp_data)
 {
 
 	int i,j,k;
-	scanLinePadding = 0;
-	if (bmp->Header.CompressionType == 0) // calculate only if uncompressed
-		{						
-			scanLinePadding = ((bmp->Header.FileSize - bmp->Header.DataOffset)/bmp->Header.Height)*8 - bmp->Header.Width;
-		}
+				scanLinePadding = 0;
+				if (bmp->Header.CompressionType == 0) // calculate only if uncompressed
+					{						
+						scanLinePadding = ((bmp->Header.FileSize - bmp->Header.DataOffset)/bmp->Header.Height)*8 - bmp->Header.Width;
+					}
 
-	if (bmp->Header.PaletteSize > 0)
-		{
+				if (bmp->Header.PaletteSize > 0)
+					{
 					
-			UCHAR *tmp = bmp->Data;
-			UINT dataOffset = 0;
-			UCHAR paletteIndex = 0; 
-			UINT paletteInt = 0;
+					UCHAR *tmp = bmp->Data;
+					UINT dataOffset = 0;
+					UCHAR paletteIndex = 0; 
+					UINT paletteInt = 0;
 
-			k=0; // k will index bits 0=high, 7=low
-			for (i=0; i<bmp->Header.Height; ++i)
-				{
-					for (j=0; j<bmp->Header.Width; ++j) // we'll be grabbing a char at a time from the data
+					k=0; // k will index bits 0=high, 7=low
+					for (i=0; i<bmp->Header.Height; ++i)
 						{
-							if (k==0)
+							for (j=0; j<bmp->Header.Width; ++j) // we'll be grabbing a char at a time from the data
 								{
+									if (k==0)
+									{
 
-									paletteIndex =  *(bmp_data+dataInd + dataOffset); // grab a char
-									++dataOffset;
-								}
+										paletteIndex =  *(bmp_data+dataInd + dataOffset); // grab a char
+										++dataOffset;
+									}
 									
 									// pull a bit from the char
-									paletteInt=  ((paletteIndex & (1 << (7-k))) > 0) ? 1 : 0;
+											paletteInt=  ((paletteIndex & (1 << (7-k))) > 0) ? 1 : 0;
 
 										
-									*(tmp) = *(bmp->Palette+paletteInt*bmp->Header.PaletteElementSize+2); 
-									++tmp;  
-									*(tmp) = *(bmp->Palette+paletteInt*bmp->Header.PaletteElementSize+1); 
-									++tmp; 
-									*(tmp) = *(bmp->Palette+paletteInt*bmp->Header.PaletteElementSize); 
-									++tmp; 
-									// This is only applicable if output format is RGBA
-									//*(tmp) = 255; ++tmp;
+											*(tmp) = *(bmp->Palette+paletteInt*bmp->Header.PaletteElementSize+2); 
+											++tmp;  
+											*(tmp) = *(bmp->Palette+paletteInt*bmp->Header.PaletteElementSize+1); 
+											++tmp; 
+											*(tmp) = *(bmp->Palette+paletteInt*bmp->Header.PaletteElementSize); 
+											++tmp; 
+											// taking out the alpha
+											//*(tmp) = 255; ++tmp;
 									
 									k = (k+1)%8;
 								}
@@ -409,7 +411,7 @@ int 	dec1(const char* bmp_data)
 								{
 									dataOffset += (int) (scanLinePadding -1)/8;
 								}
-							k=0; 
+							k=0; // TODO: This is to be confirmed - is there ever the case of non-byte scanline?
 				 		}
 					
 					
@@ -440,7 +442,7 @@ int 	dec1(const char* bmp_data)
 												*(tmp) = 0; ++tmp;
 												*(tmp) = 0; ++tmp;												
 												}
-											// This only applicable if doing RGBA output format
+											// took out the alpha
 											//*(tmp) = 255; ++tmp;
 										}
 									dataOffset +=1;
@@ -497,6 +499,10 @@ static void base_filter_finalize(GF_Filter *filter)
 	//peform any finalyze routine needed, including potential free in the filter context
 	//if not needed, set the filter_finalize to NULL
 
+
+	// inserting test lines
+	// no return needed return GF_OK;
+
 }
 static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 {
@@ -534,8 +540,7 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 
 	/* Check that the bitmap variant is supported */
 	/* first check permitted BPP */
-	if (  bmp->Header.BitsPerPixel != 32 && bmp->Header.BitsPerPixel != 24 && bmp->Header.BitsPerPixel != 16 && bmp->Header.BitsPerPixel != 8 
-		&& bmp->Header.BitsPerPixel != 4 && bmp->Header.BitsPerPixel != 2 && bmp->Header.BitsPerPixel != 1  )
+	if ( bmp->Header.BitsPerPixel != 1  )
 	{
 		free( bmp );
 		return GF_NOT_SUPPORTED;
@@ -548,7 +553,7 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 	}
 
 	/* Allocate memory for image data */
-	bmp->Data = (UCHAR*) malloc( bmp->Header.Width* bmp->Header.Height * 3); /* RGA output*/
+	bmp->Data = (UCHAR*) malloc( bmp->Header.Width* bmp->Header.Height * 3); /* forcing RGB output*/
 	if ( bmp->Data == NULL )
 	{
 		free( bmp->Palette );
@@ -568,7 +573,7 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 	if (bmp->Header.Orientation == 0) // origin in lower-left
 		{
 			UCHAR * tmpData;
-			tmpData = (UCHAR*) malloc( bmp->Header.Width* bmp->Header.Height * 3); // RGB output
+			tmpData = (UCHAR*) malloc( bmp->Header.Width* bmp->Header.Height * 3); /* forcing RGB output*/
 			if ( tmpData == NULL )
 				{
 					return GF_OUT_OF_MEM;	
@@ -577,24 +582,44 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 			int descend = 0;
 			for (i=(bmp->Header.Height)-1; i>-1; --i) 
 				{
-					ascend = abs(bmp->Header.Height-i-1)*bmp->Header.Width*3; // RGB output 
+					ascend = abs(bmp->Header.Height-i-1)*bmp->Header.Width*3;
 					descend = i*bmp->Header.Width*3;
 					memcpy(tmpData+ascend, bmp->Data+descend, bmp->Header.Width*3);
 				}
 			memcpy(bmp->Data,tmpData,bmp->Header.Height*bmp->Header.Width*3);
 			free(tmpData);
 		}
+
+	
 	data_dst = bmp->Data; 
+
+    // debugging
+	//u8 *tm1;
+	//tm1 = data_dst;
+	//int j;
+	//for (i=0; i< bmp->Header.Height-1; ++i)
+	//{
+	//	for (j=0; j< bmp->Header.Width-1; ++j)
+	//	{		*(tm1) = 255; ++tm1;
+	//		*(tm1) = 0; ++tm1;
+	//		*(tm1) = 0; ++tm1;
+	//
+	//	}
+	//}
+
+	int tmpwid= BMP_GetWidth();	
+	int tmphei= BMP_GetHeight();
+	// end of debugging section	
 
 
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_WIDTH, &PROP_UINT(BMP_GetWidth()));
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_HEIGHT, &PROP_UINT(BMP_GetHeight()));
-	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_STRIDE, &PROP_UINT(3 * BMP_GetWidth()));	 //RGB output 
+	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_STRIDE, &PROP_UINT(BMP_GetWidth()));	
 
 	
 
 	//produce output packet using memory allocation
-	pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, BMP_GetWidth(bmp)*BMP_GetHeight(bmp)*4, &data_dst);
+	pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, BMP_GetWidth()*BMP_GetHeight()*3, &data_dst);
 	//pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, size, &data_dst);
 	if (!pck_dst) return GF_OUT_OF_MEM;
 	//memcpy(data_dst, data_src, size);
@@ -648,6 +673,7 @@ static GF_Err BMP1BPP_filter_config_input(GF_Filter *filter, GF_FilterPid *pid, 
 	stack->src_pid = pid;
 	gf_filter_pid_set_framing_mode(pid, GF_TRUE);
 	stack->dst_pid = gf_filter_pid_new(filter);
+
 	gf_filter_pid_copy_properties(stack->dst_pid, stack->src_pid);
 
 	// added these
