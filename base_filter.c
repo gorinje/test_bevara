@@ -661,7 +661,7 @@ static GF_Err BMP1BPP_filter_config_input(GF_Filter *filter, GF_FilterPid *pid, 
 	gf_filter_pid_set_property(stack->dst_pid, GF_4CC('c','u','s','2'), &p);
 
 	//set framing mode if needed - by default all PIDs require complete data blocks as inputs
-	//	gf_filter_pid_set_framing_mode(pidctx->src_pid, GF_TRUE);
+	gf_filter_pid_set_framing_mode(stack->src_pid, GF_TRUE);
 
 	return GF_OK;
 }
