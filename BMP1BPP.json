@@ -4,7 +4,7 @@
     "filters": [
         "base_filter"
     ],
-    "help": "Long description of the filter.",
+    "help": "This filter handles a small subset of BMP images with little checking.",
     "support": [
         "image",
         "audio",
