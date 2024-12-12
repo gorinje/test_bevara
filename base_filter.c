@@ -504,6 +504,61 @@ static void base_filter_finalize(GF_Filter *filter)
 	// no return needed return GF_OK;
 
 }
+
+// static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
+// {
+// 	u8 *data_dst;
+// 	const u8 *data_src;
+// 	u32 size;
+
+// 	GF_FilterPacket *pck_dst;
+// 	GF_BaseFilter *stack = (GF_BaseFilter *) gf_filter_get_udta(filter);
+
+// 	GF_FilterPacket *pck = gf_filter_pid_get_packet(stack->src_pid);
+// 	if (!pck) return GF_OK;
+// 	data_src = gf_filter_pck_get_data(pck, &size);
+
+
+// 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_WIDTH, &PROP_UINT(320));
+// 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_HEIGHT, &PROP_UINT(240));
+// 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_STRIDE, &PROP_UINT(320*3));	
+
+//   	pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, 320*240*3, &data_dst);
+	
+// 	int i;
+// 	for (i=0; i<320*240*3; i=i+3)
+// 	{
+// 		*(data_dst +i) = 255;
+// 		*(data_dst +i+1) = 0;
+// 		*(data_dst +i+2) = 0;
+
+// 	}
+
+
+// 	//produce output packet using memory allocation
+	
+// 	//pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, size, &data_dst);
+// 	if (!pck_dst) return GF_OUT_OF_MEM;
+// 	//memcpy(data_dst, data_src, size);
+
+
+	
+	
+
+// 	//no need to adjust data framing
+// 	gf_filter_pck_set_framing(pck_dst, GF_TRUE, GF_TRUE);
+
+// 	//copy over src props to dst
+// 	gf_filter_pck_merge_properties(pck, pck_dst);
+// 	gf_filter_pck_set_dependency_flags(pck_dst, 0);
+
+// 	gf_filter_pck_send(pck_dst);
+
+// 	gf_filter_pid_drop_packet(stack->src_pid);
+// 	return GF_OK;
+
+// }
+
 static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 {
 	u8 *data_dst;
@@ -569,7 +624,7 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 	else // shouldn't reach here if did earlier sanity check 
 			return GF_NOT_SUPPORTED;
 	
-	// Flip, if needed. Leave here rather than doing in-place calculation. Uses memory, but simpler. 
+	// Flip, if needed. Leave here rather than doing in-place calculation. Uses memory, but simpler.
 	if (bmp->Header.Orientation == 0) // origin in lower-left
 		{
 			UCHAR * tmpData;
@@ -590,36 +645,19 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 			free(tmpData);
 		}
 
-	
-	data_dst = bmp->Data; 
-
-    // debugging
-	//u8 *tm1;
-	//tm1 = data_dst;
-	//int j;
-	//for (i=0; i< bmp->Header.Height-1; ++i)
-	//{
-	//	for (j=0; j< bmp->Header.Width-1; ++j)
-	//	{		*(tm1) = 255; ++tm1;
-	//		*(tm1) = 0; ++tm1;
-	//		*(tm1) = 0; ++tm1;
-	//
-	//	}
-	//}
-
-	int tmpwid= BMP_GetWidth();	
-	int tmphei= BMP_GetHeight();
-	// end of debugging section	
-
 
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_WIDTH, &PROP_UINT(BMP_GetWidth()));
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_HEIGHT, &PROP_UINT(BMP_GetHeight()));
-	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_STRIDE, &PROP_UINT(BMP_GetWidth()));	
+	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_STRIDE, &PROP_UINT(BMP_GetWidth()*3));	
 
 	
 
 	//produce output packet using memory allocation
 	pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, BMP_GetWidth()*BMP_GetHeight()*3, &data_dst);
+
+	memcpy(data_dst, bmp->Data,  BMP_GetWidth()*BMP_GetHeight()*3);
+
+
 	//pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, size, &data_dst);
 	if (!pck_dst) return GF_OUT_OF_MEM;
 	//memcpy(data_dst, data_src, size);
