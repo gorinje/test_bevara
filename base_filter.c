@@ -651,7 +651,6 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_STRIDE, &PROP_UINT(BMP_GetWidth()*3));	
 
 	
-
 	//produce output packet using memory allocation
 	pck_dst = gf_filter_pck_new_alloc(stack->dst_pid, BMP_GetWidth()*BMP_GetHeight()*3, &data_dst);
 
