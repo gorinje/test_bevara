@@ -648,6 +648,7 @@ static GF_Err BMP1BPP_filter_process(GF_Filter *filter)
 		}
 
 
+
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_WIDTH, &PROP_UINT(BMP_GetWidth()));
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_HEIGHT, &PROP_UINT(BMP_GetHeight()));
 	gf_filter_pid_set_property(stack->dst_pid, GF_PROP_PID_STRIDE, &PROP_UINT(BMP_GetWidth()*3));	
