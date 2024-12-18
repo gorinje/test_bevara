@@ -1,1 +1,3 @@
 .bevara/
+.DS_Store
+build/
